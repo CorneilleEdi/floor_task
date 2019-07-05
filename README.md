@@ -1,16 +1,61 @@
-# floor_start
+# Task app with Floor
 
-A new Flutter project.
+this app use the [Floor package](https://pub.dev/packages/floor)
 
-## Getting Started
+The Floor library provides a lightweight SQLite abstraction with automatic mapping between in-memory objects and database rows while still offering full control of the database with the use of SQL.
 
-This project is a starting point for a Flutter application.
+It's important to note that this library is not a full-featured ORM like Hibernate and will never be. Thus not supporting automatic relationship mapping is intentional.
 
-A few resources to get you started if this is your first Flutter project:
+Model 
+``` dart 
+@entity
+class Task {
+  @PrimaryKey(autoGenerate: true)
+  final int id;
 
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
+  String title;
+  
+  final int createdTime;
+}
+```
 
-For help getting started with Flutter, view our 
-[online documentation](https://flutter.dev/docs), which offers tutorials, 
-samples, guidance on mobile development, and a full API reference.
+Dao
+``` dart 
+
+@dao
+abstract class TaskDao {
+  @Query('SELECT * FROM task WHERE id = :id')
+  Future<Task> findTaskById(int id);
+
+  @Query('SELECT * FROM task')
+  Future<List<Task>> findAllTasks();
+
+  @Query('SELECT * FROM task')
+  Stream<List<Task>> findAllTasksAsStream();
+
+  @insert
+  Future<void> insertTask(Task task);
+
+  @update
+  Future<void> updateTask(Task task);
+
+  @delete
+  Future<void> deleteTask(Task task);
+
+  @Query('DELETE FROM task')
+  Future<void> deleteAllTask();
+}
+
+```
+
+Using the stream is very powerful
+``` dart 
+@Query('SELECT * FROM task')
+  Stream<List<Task>> findAllTasksAsStream();
+```
+
+Main screeen for the list | Dialog for adding a task | Dialog for update a task
+--- | --- | ---
+![list](./images/main.png) | ![list](./images/add.png)| ![list](./images/update.png)
+
+for the example of the provider package check **the provider branch**
