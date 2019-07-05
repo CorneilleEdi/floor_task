@@ -1,10 +1,12 @@
 import 'package:floor_start/database/task_dao.dart';
 import 'package:floor_start/model/task.dart';
+import 'package:floor_start/provider/task_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:meta/meta.dart';
 
 displayDialog(
     {@required BuildContext context,
+    @required  TaskProvider taskProvider,
     @required TaskDao dao,
     bool update,
     Task task}) async {
@@ -35,12 +37,18 @@ displayDialog(
               onPressed: () async {
                 final message = textEditingController.text;
                 if (update) {
+                  List<Task> tasks = taskProvider.getTasks();
+                  var position  = tasks.indexOf(task); //get position of the task in the list
+
                   task.title = message;
                   await dao.updateTask(task);
+                  
+                  taskProvider.updateTask(task, position);
                 } else {
                   final task = Task(
                       null, message, DateTime.now().millisecondsSinceEpoch);
                   await dao.insertTask(task);
+                  taskProvider.addTask(task);
                 }
                 textEditingController.clear();
                 Navigator.of(context).pop();

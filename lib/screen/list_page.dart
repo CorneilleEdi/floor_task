@@ -1,8 +1,10 @@
 import 'package:floor_start/database/task_dao.dart';
 import 'package:floor_start/model/task.dart';
+import 'package:floor_start/provider/task_provider.dart';
 import 'package:floor_start/screen/text_input_dialog.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 class ListPage extends StatelessWidget {
   final String title;
@@ -16,38 +18,41 @@ class ListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final TaskProvider taskProvider = Provider.of<TaskProvider>(context);
+    var tasks = taskProvider.getTasks();
+
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
-       
+        actions: <Widget>[
+          new IconButton(
+              icon: new Icon(Icons.delete),
+              onPressed: () async {
+                await taskProvider.removeAllTask();
+              }),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         child: new Icon(Icons.add),
-        onPressed: () =>
-            displayDialog(context: context, dao: dao, update: false),
+        onPressed: () => displayDialog(
+            context: context,
+            taskProvider: taskProvider,
+            dao: dao,
+            update: false),
       ),
       body: Column(
         children: <Widget>[
           Expanded(
-            child: StreamBuilder<List<Task>>(
-              stream: dao.findAllTasksAsStream(),
-              builder: (_, snapshot) {
-                if (!snapshot.hasData) return Container();
-
-                final tasks = snapshot.data;
-
-                return ListView.builder(
-                  itemCount: tasks.length,
-                  itemBuilder: (_, index) {
-                    return ListCell(
-                      task: tasks[index],
-                      dao: dao,
-                    );
-                  },
-                );
-              },
-            ),
-          ),
+              child: ListView.builder(
+            itemCount: tasks.length,
+            itemBuilder: (_, index) {
+              return ListCell(
+                task: tasks[index],
+                dao: dao,
+                taskProvider: taskProvider,
+              );
+            },
+          )),
         ],
       ),
     );
@@ -60,19 +65,26 @@ _formatDate(int at) {
       .format(DateTime.fromMillisecondsSinceEpoch(at));
 }
 
-
 class ListCell extends StatelessWidget {
-  const ListCell({
-    Key key,
-    @required this.task,
-    @required this.dao,
-  }) : super(key: key);
+  const ListCell(
+      {Key key,
+      @required this.task,
+      @required this.dao,
+      @required this.taskProvider})
+      : super(key: key);
 
   final Task task;
   final TaskDao dao;
+  final TaskProvider taskProvider;
 
-  _onLongPressUpdate(BuildContext context, TaskDao dao, bool update, Task task) {
-    displayDialog(context: context, dao: dao, update: update, task: task);
+  _onLongPressUpdate(
+      BuildContext context, TaskDao dao, bool update, Task task) {
+    displayDialog(
+        context: context,
+        taskProvider: taskProvider,
+        dao: dao,
+        update: update,
+        task: task);
   }
 
   @override
@@ -97,6 +109,7 @@ class ListCell extends StatelessWidget {
             trailing: IconButton(
               onPressed: () async {
                 await dao.deleteTask(task);
+                taskProvider.removeTask(task);
                 Scaffold.of(context).showSnackBar(
                   SnackBar(content: Text('task  ${task.title} is removed')),
                 );
